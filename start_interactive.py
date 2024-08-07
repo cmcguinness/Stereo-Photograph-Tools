@@ -102,7 +102,11 @@ class AlignTool:
     def shift(self, delta_x, delta_y):
         self.tools.shift_x += delta_x
         self.tools.shift_y += delta_y
-        my_ana = self.tools.make_anaglyph(style=self.style, gamma=self.gamma, show_diff=self.show_diff)
+        gamma = self.gamma
+        if self.show_diff:
+            gamma = 1.0 # Gamma doesn't work in diff mode
+
+        my_ana = self.tools.make_anaglyph(style=self.style, gamma=gamma, show_diff=self.show_diff)
         WIDTH, HEIGHT = 800, 600
         img = ImageTk.PhotoImage(my_ana.resize((WIDTH, HEIGHT), Image.Resampling.NEAREST))
         self.lbl.configure(image=img)
