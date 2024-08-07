@@ -1,5 +1,5 @@
 from PIL import Image, ImageTk
-from tkinter import Tk, messagebox, Button, Label, PhotoImage, mainloop, Frame, filedialog
+from tkinter import Tk, messagebox, Button, Label, PhotoImage, mainloop, Frame, filedialog, StringVar, OptionMenu
 from stereotools import StereoTools
 from mpo import MPO
 
@@ -16,6 +16,7 @@ class AlignTool:
         self.style = 'color'
         self.gamma = 1.0
         self.gamma_label = None
+        self.file_format = None
 
     def open_file(self):
         file_path = filedialog.askopenfilename(title="Select an MPO File", filetypes=[("MPO files", "*.mpo"), ("All files", "*.*")])
@@ -66,8 +67,12 @@ class AlignTool:
 
         Label(top, text=" ").pack(side="left")
 
-        Button(top, text="Save", command=self.save).pack(side="left")
+        Button(top, text="Save as: ", command=self.save_file).pack(side="left")
 
+        self.file_format = StringVar(self.root)
+        choices = { 'Anaglyph', 'Holmes', 'Cross-Eyed'}
+        self.file_format.set('Analglyph')
+        OptionMenu(top, self.file_format, *choices).pack(side="left")
         self.lbl = Label(bottom, image=self.tkimg)
         self.lbl.pack()
         bottom.pack(side="bottom", fill="both", expand=True)
@@ -114,11 +119,16 @@ class AlignTool:
         self.lbl.pack()
         # self.canvas.update_idletasks()
 
-    def save(self):
+    def save_file(self):
         dir = directory = filedialog.askdirectory(title="Save file to")
-        self.tools.make_anaglyph(suffix='ana_edited', style=self.style, output_directory=dir)
+        if self.file_format.get() == 'Anaglyph':
+            self.tools.make_anaglyph(suffix='ana_edited', style=self.style, output_directory=dir)
+        if self.file_format.get() == 'Holmes':
+            self.tools.make_holmes_card(output_directory=dir)
+        if self.file_format.get() == 'Cross-Eyed':
+            self.tools.make_square_crossed_card(output_directory=dir)
+
         messagebox.showinfo('Saved',f'File {self.tools.outname} saved.')
-        exit(0)
 
 
 if __name__ == "__main__":
