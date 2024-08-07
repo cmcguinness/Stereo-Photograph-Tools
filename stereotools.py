@@ -7,18 +7,28 @@
 #    │                                                          │
 #    └──────────────────────────────────────────────────────────┘
 import os
-from PIL import Image
+from PIL import Image, ImageTk
 import numpy as np
 from stereopair import StereoPair
+from tkinter import Tk, Canvas, Button, Label, PhotoImage, mainloop, Frame
 
+saved_class = None
 
 class StereoTools:
     def __init__(self, image: StereoPair=None):
+        self.lbl = None
         self.image: StereoPair = image
+        self.shift_x = 0
+        self.shift_y = 0
+        self.tkimg = None
+        self.outdir = None
+        self.outname = None
 
     # Pass in the image pair
     def set_image(self, image: StereoPair):
         self.image = image
+        self.shift_x = 0
+        self.shift_y = 0
 
     # Save an image to the output directory; create the directory if it does not exist
     # The name will be generated from self.image's name, timestamp, and the passed in suffix
@@ -40,6 +50,9 @@ class StereoTools:
         output_file_path = os.path.join(output_directory, output_file_name)
 
         image.save(output_file_path, compress_level=1)
+
+        self.outname = output_file_name
+        self.outdir = output_directory
 
     # Create a stereo card with the left and right images side-by-side
     # Note that the images are cropped to 900x900 pixels by taking the central square (assumes landscape images)
@@ -105,7 +118,7 @@ class StereoTools:
         self.image.left_image.save(output_file_path, save_all=True, append_images=[self.image.right_image], duration=250, loop=0)
 
 
-    def make_anaglyph(self, suffix='ana', output_directory=None, style='color', gamma=1.0, red_gamma=1.0):
+    def make_anaglyph(self, suffix='ana', output_directory=None, style='color', gamma=1.0, red_gamma=1.0, show_diff = False):
 
         styles = {
             'color': {
@@ -120,14 +133,40 @@ class StereoTools:
             'bw': {
                 'left':  (0.3, 0.6, 0.1, 0,   0.0, 0.0, 0.0, 0,   0.0, 0.0, 0.0, 0),
                 'right': (0.0, 0.0, 0.0, 0,   0.3, 0.6, 0.1, 0,   0.3, 0.6, 0.1, 0)
-            }
+            },
+            'diff': {
+                'left':  (1,0,0,0, 0,1,0,0, 0,0,1,0),
+                'right': (1,0,0,0, 0,1,0,0, 0,0,1,0)
+            },
+
         }
+
+        if show_diff:
+            style = 'diff'
 
         left_matrix  = styles[style]['left']
         right_matrix = styles[style]['right']
 
+
         ana_left = self.image.left_image.convert('RGB', left_matrix)
         ana_right = self.image.right_image.convert('RGB', right_matrix)
+
+        if self.shift_x != 0 or self.shift_y != 0:
+            lx,ly = ana_left.size
+            if self.shift_x > 0:
+                ana_left = ana_left.crop(  (self.shift_x,  0,  lx,               ly))
+                ana_right = ana_right.crop((0,             0,  lx-self.shift_x,  ly))
+            if self.shift_x < 0:
+                ana_right = ana_right.crop((-self.shift_x, 0,  lx,               ly))
+                ana_left = ana_left.crop(  (0,             0,  lx+self.shift_x,  ly))
+
+            lx,ly = ana_left.size
+            if self.shift_y > 0:
+                ana_left = ana_left.crop(  (0,  self.shift_y, lx, ly))
+                ana_right = ana_right.crop((0, 0,            lx, ly-self.shift_y))
+            if self.shift_y < 0:
+                ana_right = ana_right.crop((0, -self.shift_y, lx, ly))
+                ana_left = ana_left.crop(  (0, 0,             lx, ly+self.shift_y))
 
         # Because Red values are perceived as darker than Green, we can brighten up the red
         if red_gamma != 1.0:
@@ -136,7 +175,12 @@ class StereoTools:
         na_left = np.array(ana_left)
         na_right = np.array(ana_right)
 
-        np_added = na_left + na_right
+        if show_diff:
+            na_left = np.dot(na_left[...,:3], [0.2989, 0.5870, 0.1140])
+            na_right = np.dot(na_right[...,:3], [0.2989, 0.5870, 0.1140])
+            np_added = np.abs(na_left - na_right)
+        else:
+            np_added = na_left + na_right
 
         anaglyph = Image.fromarray(np_added)
 

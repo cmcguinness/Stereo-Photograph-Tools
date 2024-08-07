@@ -2,11 +2,7 @@
 
 I have a 3D camera, the Fuji W3, which generates .MPO files that have the left and right images from each shot.  That is not exactly the most popular format around, and I started cobbling together tools to process the images.
 
-This will work with any set of stereo images, not just MPO files,
-
-
-
-  In the past, Photoshop had support for them, but it's ability to work with 3D images has been deprecated.
+ In the past, Photoshop had support for them, but it's ability to work with 3D images has been deprecated.
 
 This is a utility to do a few typical things I want to do:
 
@@ -16,6 +12,11 @@ This is a utility to do a few typical things I want to do:
 * Create a cross-eyed card in Holmes format (basically, takes the middle squares from left and right)
 * Create a Wiggle3d animated GIF (Left/Right images alternating quickly)
 * Create a red/cyan anaglyph
+
+There are two modes of operation:
+
+1. Batch, where all *.MPO files in a directory are converted, and
+2. Interactive, where you load an MPO file into the app and then make adjustments on alignment, style, and gamma (γ) before saving it.
 
 You can of course modify the code to suit your needs.
 
@@ -31,9 +32,9 @@ The file `main.py` contains an example program that will scan a source directory
 
 
 
-## Usage
+## Batch Usage
 
-After installing the requirements, the `main.py` runs from the command line without options.
+After installing the requirements, the `start_batch.py` runs from the command line without options.
 
 You can edit the section that reads:
 
@@ -47,6 +48,18 @@ if __name__ == '__main__':
 ```
 
 To have the correct directories for the source of the .mpo files and where you want to put them, and then just run it.  It will cycle through all the .mpo files and convert them into the other formats.
+
+
+
+## Interactive Usage
+
+If you run the program `start_interactive.py`, it will prompt you to open an MPO file to allow you to build an anaglyph.  On the top of the window with the image are controls so:
+
+* Change the alignment between the two images.  Generally speaking, if you bring the subject of the image into alignment, it will be the easiest to see.
+* Flip into a mode where you see the difference between the left and right images to help align them,
+* Toggle between various color modes (Color, Low Color, and B&W)
+* Change the gamma (γ) of the output image to make it brighter or darker
+* Save the current anaglyph to a file.  It will only ask you for a directory and then generate a timestamped name.
 
 
 
