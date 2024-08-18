@@ -17,6 +17,9 @@ class AlignTool:
         self.gamma = 1.0
         self.gamma_label = None
         self.file_format = None
+        self.unsharp_radius = 0
+        self.unsharp_button = None
+
 
     def open_file(self):
         file_path = filedialog.askopenfilename(title="Select an MPO File", filetypes=[("MPO files", "*.mpo"), ("All files", "*.*")])
@@ -52,11 +55,19 @@ class AlignTool:
 
         Label(top, text=" ").pack(side="left")
 
+        Button(top, text="↷", command=lambda: self.rotate(-0.5)).pack(side="left")
+        Button(top, text="↶", command=lambda: self.rotate(0.5)).pack(side="left")
+
+        Label(top, text=" ").pack(side="left")
+
         self.toggle_diff_button = Button(top, text="Diff", command=self.toggle_diff)
         self.toggle_diff_button.pack(side="left")
 
-        self.style_button = Button(top, text="Color", command=self.toggle_style)
+        self.style_button = Button(top, text="High Color", width=10, command=self.toggle_style)
         self.style_button.pack(side="left")
+
+        self.unsharp_button = Button(top, text="Unsharp Off", width=10, command=self.toggle_unsharp)
+        self.unsharp_button.pack(side="left")
 
         Label(top, text=" ").pack(side="left")
         Button(top, text="γ ↑", command=lambda: self.toggle_gamma(1)).pack(side="left")
@@ -71,7 +82,7 @@ class AlignTool:
 
         self.file_format = StringVar(self.root)
         choices = { 'Anaglyph', 'Holmes', 'Cross-Eyed'}
-        self.file_format.set('Analglyph')
+        self.file_format.set('Anaglyph')
         OptionMenu(top, self.file_format, *choices).pack(side="left")
         self.lbl = Label(bottom, image=self.tkimg)
         self.lbl.pack()
@@ -88,7 +99,7 @@ class AlignTool:
         self.shift(0,0)
 
     def toggle_style(self):
-        styles = [('color', 'Color'), ('l-bw', 'Low Color'), ('bw', 'B&W')]
+        styles = [('color', 'High Color'), ('l-bw', 'Low Color'), ('bw', 'B&W')]
         for i in range(len(styles)):
             if styles[i][0] == self.style:
                 n = (i+1) % len(styles)
@@ -103,6 +114,30 @@ class AlignTool:
         self.gamma_label['text'] = f'γ={self.gamma:.1f}'
         self.shift(0,0)
 
+    def toggle_unsharp(self):
+
+        if self.unsharp_button['text'] == 'Unsharp Off':
+            self.unsharp_button['text'] = 'Unsharp Low'
+            self.tools.unsharp_radius = 10
+        elif self.unsharp_button['text'] == 'Unsharp Low':
+            self.unsharp_button['text'] = 'Unsharp High'
+            self.tools.unsharp_radius = 30
+        else:
+            self.unsharp_button['text'] = 'Unsharp Off'
+            self.tools.unsharp_radius = 0
+        self.shift(0,0)
+
+    def rotate(self, increment):
+        self.tools.rotate += increment
+        gamma = self.gamma
+        if self.show_diff:
+            gamma = 1.0 # Gamma doesn't work in diff mode
+        my_ana = self.tools.make_anaglyph(style=self.style, gamma=gamma, show_diff=self.show_diff)
+        WIDTH, HEIGHT = 800, 600
+        img = ImageTk.PhotoImage(my_ana.resize((WIDTH, HEIGHT), Image.Resampling.NEAREST))
+        self.lbl.configure(image=img)
+        self.lbl.image = img
+        self.lbl.pack()
 
     def shift(self, delta_x, delta_y):
         self.tools.shift_x += delta_x

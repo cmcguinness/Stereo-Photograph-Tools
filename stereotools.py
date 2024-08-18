@@ -7,7 +7,7 @@
 #    │                                                          │
 #    └──────────────────────────────────────────────────────────┘
 import os
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageFilter
 import numpy as np
 from stereopair import StereoPair
 from tkinter import Tk, Canvas, Button, Label, PhotoImage, mainloop, Frame
@@ -20,9 +20,11 @@ class StereoTools:
         self.image: StereoPair = image
         self.shift_x = 0
         self.shift_y = 0
+        self.rotate = 0
         self.tkimg = None
         self.outdir = None
         self.outname = None
+        self.unsharp_radius = 5
 
     # Pass in the image pair
     def set_image(self, image: StereoPair):
@@ -147,9 +149,19 @@ class StereoTools:
         left_matrix  = styles[style]['left']
         right_matrix = styles[style]['right']
 
+        raw_left = self.image.left_image
+        raw_right = self.image.right_image
 
-        ana_left = self.image.left_image.convert('RGB', left_matrix)
-        ana_right = self.image.right_image.convert('RGB', right_matrix)
+        if self.unsharp_radius != 0:
+            raw_left = raw_left.filter(ImageFilter.UnsharpMask(radius = self.unsharp_radius, percent = 50, threshold = 5))
+            raw_right = raw_right.filter(ImageFilter.UnsharpMask(radius = self.unsharp_radius, percent = 50, threshold = 5))
+
+        if self.rotate != 0:
+            raw_left = raw_left.rotate(self.rotate,expand=True, fillcolor=(255,255,255))
+            raw_right = raw_right.rotate(self.rotate,expand=True, fillcolor=(255,255,255))
+
+        ana_left = raw_left.convert('RGB', left_matrix)
+        ana_right = raw_right.convert('RGB', right_matrix)
 
         if self.shift_x != 0 or self.shift_y != 0:
             lx,ly = ana_left.size
