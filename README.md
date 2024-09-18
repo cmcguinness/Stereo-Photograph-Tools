@@ -56,6 +56,8 @@ To have the correct directories for the source of the .mpo files and where you w
 If you run the program `start_interactive.py`, it will prompt you to open an MPO file to allow you to build an anaglyph.  On the top of the window with the image are controls so:
 
 * Change the alignment between the two images.  Generally speaking, if you bring the subject of the image into alignment, it will be the easiest to see.
+* Rotate the image left or right.  This may be needed if you didn't hold the camera perfectly level (like I do all the time)
+* Crop the image.  If you rotate the image, you'll can crop it down so that there's no empty bits on the sides / top / bottom.
 * Flip into a mode where you see the difference between the left and right images to help align them,
 * Toggle between various color modes (Color, Low Color, and B&W)
 * Change the gamma (γ) of the output image to make it brighter or darker

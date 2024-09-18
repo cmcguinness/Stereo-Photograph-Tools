@@ -25,6 +25,7 @@ class StereoTools:
         self.outdir = None
         self.outname = None
         self.unsharp_radius = 5
+        self.crop = 0
 
     # Pass in the image pair
     def set_image(self, image: StereoPair):
@@ -67,8 +68,11 @@ class StereoTools:
             new_image = image.crop((crop_left, 0, crop_right, height))
             return new_image.resize((900, 900), Image.Resampling.LANCZOS)
 
-        right_image = normalize_size(self.image.right_image)
-        left_image = normalize_size(self.image.left_image)
+        final_left, final_right = self.get_final_image()
+
+        right_image = normalize_size(final_right)
+        left_image = normalize_size(final_left)
+
 
         # Create a new image with double the width
         stereo_image = Image.new('RGB', (2100, 1050), color='#F8F8F8')
@@ -88,6 +92,23 @@ class StereoTools:
 
         return stereo_image
 
+    def get_final_image(self):
+        final_left = self.image.left_image
+        final_right = self.image.right_image
+        # Crop the images
+        # Apply unsharp mask
+        if self.unsharp_radius != 0:
+            final_left = final_left.filter(ImageFilter.UnsharpMask(radius=self.unsharp_radius, percent=50, threshold=5))
+            final_right = final_right.filter(ImageFilter.UnsharpMask(radius=self.unsharp_radius, percent=50, threshold=5))
+        # Rotate the images
+        if self.rotate != 0:
+            final_left = final_left.rotate(self.rotate, expand=True, fillcolor=(255, 255, 255))
+            final_right = final_right.rotate(self.rotate, expand=True, fillcolor=(255, 255, 255))
+        if self.crop != 0:
+            final_left = final_left.crop((self.crop, self.crop, final_left.width - self.crop, final_left.height - self.crop))
+            final_right = final_right.crop((self.crop, self.crop, final_right.width - self.crop, final_right.height - self.crop))
+        return final_left, final_right
+
     # Create a Holmes card from the images
     def make_holmes_card(self, output_directory = None):
         return self.make_card(isHolmes=True, output_directory=output_directory)
@@ -99,14 +120,16 @@ class StereoTools:
     # Create a crossed-eye image from the images, using the full width of the images
     def make_cross_eyed(self, output_directory=None, middle_margin=0.01):
         # Assume the images are the same size
-        width, height = self.image.left_image.size
-        margin = int(2*middle_margin*width)
 
+        final_left, final_right = self.get_final_image()
+
+        width, height = final_left.size
+        margin = int(2 * middle_margin * width)
         # Create a new image with double the width
         stereo_image = Image.new('RGB', (width*2+margin, height), color='#F8F8F8')
 
-        stereo_image.paste(self.image.left_image, (width+margin,0))
-        stereo_image.paste(self.image.right_image, (0,0))
+        stereo_image.paste(final_left, (width+margin,0))
+        stereo_image.paste(final_right, (0,0))
 
         if output_directory is not None:
             self.save_image(stereo_image, output_directory, 'crossed')
@@ -116,8 +139,8 @@ class StereoTools:
     def save_as_wiggle3d(self, output_directory, suffix='wiggle3d', ):
         output_file_name = f"{self.image.timestamp}-{self.image.name}-{suffix}.gif"
         output_file_path = os.path.join(output_directory, output_file_name)
-
-        self.image.left_image.save(output_file_path, save_all=True, append_images=[self.image.right_image], duration=250, loop=0)
+        final_left, final_right = self.get_final_image()
+        final_left.save(output_file_path, save_all=True, append_images=[final_right], duration=250, loop=0)
 
 
     def make_anaglyph(self, suffix='ana', output_directory=None, style='color', gamma=1.0, red_gamma=1.0, show_diff = False):
@@ -149,19 +172,10 @@ class StereoTools:
         left_matrix  = styles[style]['left']
         right_matrix = styles[style]['right']
 
-        raw_left = self.image.left_image
-        raw_right = self.image.right_image
+        final_left, final_right = self.get_final_image()
 
-        if self.unsharp_radius != 0:
-            raw_left = raw_left.filter(ImageFilter.UnsharpMask(radius = self.unsharp_radius, percent = 50, threshold = 5))
-            raw_right = raw_right.filter(ImageFilter.UnsharpMask(radius = self.unsharp_radius, percent = 50, threshold = 5))
-
-        if self.rotate != 0:
-            raw_left = raw_left.rotate(self.rotate,expand=True, fillcolor=(255,255,255))
-            raw_right = raw_right.rotate(self.rotate,expand=True, fillcolor=(255,255,255))
-
-        ana_left = raw_left.convert('RGB', left_matrix)
-        ana_right = raw_right.convert('RGB', right_matrix)
+        ana_left = final_left.convert('RGB', left_matrix)
+        ana_right = final_right.convert('RGB', right_matrix)
 
         if self.shift_x != 0 or self.shift_y != 0:
             lx,ly = ana_left.size
@@ -207,6 +221,8 @@ class StereoTools:
 
     # Save the left and right images as separate files
     def save_left_right_images(self, output_directory):
-        for t in [('left', self.image.left_image), ('right', self.image.right_image)]:
+        final_left, final_right = self.get_final_image()
+
+        for t in [('left', final_left), ('right', final_right)]:
             self.save_image(t[1], output_directory, t[0])
 

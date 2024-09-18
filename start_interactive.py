@@ -19,6 +19,8 @@ class AlignTool:
         self.file_format = None
         self.unsharp_radius = 0
         self.unsharp_button = None
+        self.crop = 0
+
 
 
     def open_file(self):
@@ -43,15 +45,20 @@ class AlignTool:
         my_ana = self.tools.make_anaglyph(style=self.style, gamma=self.gamma)
         self.tkimg = ImageTk.PhotoImage(my_ana.resize((WIDTH, HEIGHT), Image.Resampling.NEAREST))
 
-        Button(top, text="<<-", command=lambda: self.shift(10,0)).pack(side="left")
-        Button(top, text="<-", command=lambda: self.shift(1,0)).pack(side="left")
-        Button(top, text="->", command=lambda: self.shift(-1,0)).pack(side="left")
-        Button(top, text="->>", command=lambda: self.shift(-10,0)).pack(side="left")
+        Button(top, text="⇐", command=lambda: self.shift(20,0)).pack(side="left")
+        Button(top, text="←", command=lambda: self.shift(1,0)).pack(side="left")
+        Button(top, text="→", command=lambda: self.shift(-1,0)).pack(side="left")
+        Button(top, text="⇒", command=lambda: self.shift(-20,0)).pack(side="left")
 
         Button(top, text="⇑", command=lambda: self.shift(0,10)).pack(side="left")
         Button(top, text="↑", command=lambda: self.shift(0,1)).pack(side="left")
         Button(top, text="↓", command=lambda: self.shift(0,-1)).pack(side="left")
         Button(top, text="⇓", command=lambda: self.shift(0,-10)).pack(side="left")
+
+        Label(top, text=" ").pack(side="left")
+
+        Button(top, text="➘", command=lambda: self.do_crop(10)).pack(side="left")
+        Button(top, text="➚", command=lambda: self.do_crop(-10)).pack(side="left")
 
         Label(top, text=" ").pack(side="left")
 
@@ -138,6 +145,11 @@ class AlignTool:
         self.lbl.configure(image=img)
         self.lbl.image = img
         self.lbl.pack()
+
+    def do_crop(self, crop):
+        self.tools.crop += crop
+        self.shift(0,0)
+
 
     def shift(self, delta_x, delta_y):
         self.tools.shift_x += delta_x
